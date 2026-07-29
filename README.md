@@ -3,7 +3,7 @@
 [![Build and Test](https://github.com/garrettbovo/Pokemon-Go-System-Simulation/actions/workflows/build.yml/badge.svg)](https://github.com/garrettbovo/Pokemon-Go-System-Simulation/actions/workflows/build.yml)
 ![C11](https://img.shields.io/badge/C-11-A8B9CC?logo=c&logoColor=black)
 ![C++17](https://img.shields.io/badge/C%2B%2B-17-00599C?logo=cplusplus&logoColor=white)
-![Warnings](https://img.shields.io/badge/-Wall%20-Wextra-clean-brightgreen)
+![Warnings](https://img.shields.io/badge/--Wall%20--Wextra-clean-brightgreen)
 
 A modular **C engine** that emulates object-oriented polymorphism without a class in sight, then
 gets wrapped in modern C++ across an `extern "C"` boundary with RAII-managed lifetimes.
