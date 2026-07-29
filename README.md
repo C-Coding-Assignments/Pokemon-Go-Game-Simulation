@@ -1,121 +1,96 @@
-# Pokémon Go Collection System Simulation
+# Collection System Simulation
 
-A modular C simulation engine that models real-time Pokémon encounter, capture, and collection
-workflows. Built around pointer-based data structures, manual memory management, and a
-function pointer architecture that encapsulates all system behavior behind clean manager interfaces.
+[![Build and Test](https://github.com/garrettbovo/Pokemon-Go-System-Simulation/actions/workflows/build.yml/badge.svg)](https://github.com/garrettbovo/Pokemon-Go-System-Simulation/actions/workflows/build.yml)
+![C11](https://img.shields.io/badge/C-11-A8B9CC?logo=c&logoColor=black)
+![C++17](https://img.shields.io/badge/C%2B%2B-17-00599C?logo=cplusplus&logoColor=white)
+![Warnings](https://img.shields.io/badge/-Wall%20-Wextra-clean-brightgreen)
 
-## How to Run the Code
+A modular **C engine** that emulates object-oriented polymorphism without a class in sight, then
+gets wrapped in modern C++ across an `extern "C"` boundary with RAII-managed lifetimes.
 
-You can run this project directly in your browser without creating an account:
-[👉 Click here to open on OnlineGDB](https://www.onlinegdb.com/fKNqSTMIxO)
+The simulation models a Pokémon Go–style collection workflow — encounter, capture, and inventory
+management over a **493-record dataset** — but the engineering is the point: function-pointer
+dispatch tables, a hand-rolled trie with custom character indexing, a doubly linked list with
+multi-key sort, and fully manual memory management.
 
-⚠️ OnlineGDB is intended for quick interactive demos only.
-For full functionality, run locally using the Makefile.
-
-**Table of Contents 📖**
-
-* [Overview](#overview)
-* [Key Features](#features)
-* [Project Structure](#structure)
-* [Data Structure Design](#data-structures)
-* [System Architecture](#architecture)
-* [Gameplay Flow](#gameplay)
-* [Skills Demonstrated](#skills)
-* [How to Run](#usage)
+**[→ Run it in your browser on OnlineGDB](https://www.onlinegdb.com/fKNqSTMIxO)** (no account needed)
 
 ---
 
-## Overview
+## Quickstart
 
-The Collection System Simulation models a Pokémon Go–style experience in C, where a player
-explores regions, encounters Pokémon, and manages a live collection. The system is driven
-entirely by pointer-based traversal, dynamic memory allocation, and a function pointer manager
-pattern that wires together all subsystems at runtime.
+Requires GCC (or Clang) with C11 and C++17 support.
 
-The engine is fully data-driven:
-
-* Pokémon data is loaded from an external file at startup
-* Region filtering is validated at runtime against a known region set
-* Collection state persists across interactions and is written to file on exit
-
----
-
-## Features
-
-- **Function Pointer Architecture**
-  * `ListManager`, `MenuManager`, and `TrieManager` structs encapsulate all operations
-    behind function pointers, enabling clean dispatch and modular design
-- **Dynamic Linked List**
-  * Caught Pokémon stored in a heap-allocated doubly linked list
-  * Supports insertion, deletion, multi-key sorting, reversal, and traversal
-- **Trie-Based Search**
-  * Custom trie with per-character indexing handles uppercase, lowercase,
-    apostrophes, hyphens, and periods
-  * O(m) lookup by Pokémon name where m is name length
-- **Probabilistic Capture System**
-  * Catch outcomes determined by per-Pokémon catch percentage and ball type
-  * Individual values (Attack IV, Defense IV, Stamina IV) randomly assigned on capture
-- **File I/O Pipeline**
-  * Collection state exported to `pokemons.txt` in formatted table output
-- **Manual Memory Management**
-  * All heap allocation via `malloc`/`free` with explicit cleanup on exit
-
----
-
-## Project Structure
-
-```
-Pokemon-Go-System-Simulation/
-│
-├── pokemon-cpp/
-│   ├── main.cpp              # C++ entry point and program control
-│   ├── PokemonWrapper.cpp    # C++ wrapper bridging C engine to higher-level logic
-│   ├── PokemonWrapper.hpp    # Wrapper interface definitions
-│   │
-│   ├── pokemon.c             # Core simulation engine (capture, sorting, traversal)
-│   ├── pokemon.h             # Data structures and function interfaces
-│   │
-│   ├── poke.txt              # External Pokémon dataset (runtime-loaded)
-│   │
-│   ├── Makefile              # Build automation
-│   └── .gitignore            # Git configuration
-│
-└── README.md                 # Project overview and usage
+```bash
+git clone https://github.com/garrettbovo/Pokemon-Go-System-Simulation.git
+cd Pokemon-Go-System-Simulation/pokemon-cpp
+make
+./app
 ```
 
+The build compiles clean under `-Wall -Wextra` with no warnings. `poke.txt` must be in the
+working directory — it holds the 493-record dataset loaded at startup.
+
+### A real session
+
+```
+What's your name, trainer? > Garrett
+
+Welcome, Garrett, to the Programming I Safari Zone!
+You'll have 30 chances to catch Pokémon, make them count!
+Which region would you like to visit?
+
+Enter Kanto, Johto, Hoenn, or Sinnoh > Kanto
+
+Traveling to Kanto
+==================== MENU ====================
+• HUNT      - Go hunting for Pokémon!
+• POKÉMON   - See the Pokémon you've caught.
+• SORT      - Sort Pokémon you've caught.
+• STATS     - See your catch statistics.
+• INVENTORY - See your current inventory.
+• NAME      - View a Pokémon's Pokédex entry (e.g., BULBASAUR).
+• EXIT      - End your adventure.
+==============================================
+Selection > HUNT
+
+A wild Horsea has appeared!
+
++-----------------+-------------+
+|     Item        |  Inventory  |
++-----------------+-------------+
+| 1. Poké Ball    |          10 |
+| 2. Great Ball   |          10 |
+| 3. Ultra Ball   |          10 |
++-----------------+-------------+
+Choose ball (1, 2, or 3) > 3
+
+Threw an Ultra Ball!
+Congratulations! You caught Horsea!
+```
+
+On exit, the collection is written to `pokemons.txt`:
+
+```
+=======================================================================================
+                                   Pokémon List
+=======================================================================================
+| Num   | Name                 | Type         | Region       | Catch % | Atk IV | Def IV | Sta IV |
+=======================================================================================
+| 116   | Horsea               | Water        | Kanto        | 50      | 10     | 15     | 04   % |
+| 13    | Weedle               | Bug          | Kanto        | 50      | 7      | 4      | 10   % |
+=======================================================================================
+```
+
 ---
 
-## Data Structure Design
+## Architecture
 
-### Doubly Linked List — Caught Pokémon Collection
+### Polymorphism in C, via function pointers
 
-The player's collection is stored as a heap-allocated linked list where each node holds a full
-`Pokemon` struct and a pointer to a separately allocated `PokemonStatus` tracking catch/seen
-counts and IVs. This separation keeps per-encounter state decoupled from static Pokémon data.
-
-All list operations — insert, sort, reverse, delete — are dispatched through a `ListManager`
-struct of function pointers initialized at startup, keeping the call sites clean and the
-implementation swappable.
-
-### Trie — Name-Based Lookup
-
-Pokémon names are indexed in a trie at load time, enabling O(m) lookup during hunt encounters.
-The character indexing function maps uppercase letters, lowercase letters, apostrophes, hyphens,
-and periods to distinct trie positions, handling edge cases like `Mr. Mime` and `Farfetch'd`
-without special casing in the search path.
-
----
-
-## System Architecture
-
-The simulation uses a **manager pattern** throughout: instead of calling functions directly,
-the program initializes three manager structs at startup — `ListManager`, `MenuManager`, and
-`TrieManager` — each containing function pointers to their respective subsystem operations.
-All downstream code interacts only through these interfaces.
-
-This mirrors how real systems use vtables, dispatch tables, or interface pointers to decouple
-callers from implementations, and demonstrates deliberate design thinking in a low-level C
-environment.
+C has no vtables. This engine builds its own: three manager structs are initialized at startup,
+each holding function pointers to its subsystem's operations. Downstream code never calls an
+implementation directly — it dispatches through the interface.
 
 ```
 main()
@@ -125,68 +100,111 @@ main()
   └── initializeTrieManager()   → getNode, getCharIndex, insert, search, freeTrie
 ```
 
+This is the same decoupling a C++ vtable or a COM interface pointer provides, done explicitly —
+and it makes the implementations swappable without touching call sites.
+
+### Trie with custom character indexing
+
+Names are indexed into a trie at load time for **O(k) lookup**, where k is name length.
+
+The interesting part is the character index. A naive `c - 'a'` mapping breaks on real data, and
+this dataset is full of it — `Farfetch'd`, `Mr. Mime`, `Ho-Oh`, `Porygon-Z`. The indexing
+function maps uppercase, lowercase, apostrophes, hyphens, and periods to distinct trie slots, so
+those names resolve through the same code path as any other, with no special casing in search.
+
+Verified against the live build:
+
+```
+Selection > NAME
+Enter Pokémon name > FARFETCH'D
+
+=========================================
+ Pokémon Information
+=========================================
+ Name       : Farfetch'd
+ Type       : Normal
+ Dex Entry  : "Farfetch'd is always seen with a stalk from a plant of some sort..."
+=========================================
+```
+
+### Doubly linked list collection
+
+Caught Pokémon live in a heap-allocated doubly linked list. Each node carries a full `Pokemon`
+struct plus a pointer to a separately allocated `PokemonStatus` holding catch/seen counts and
+individual values — keeping per-encounter state decoupled from static dataset records.
+
+Supports insertion, deletion, multi-key sort (by name, type, or dex number), and in-place
+reversal, all dispatched through `ListManager`.
+
+### Hybrid C/C++ boundary
+
+The C engine is exposed to C++ through `extern "C"` linkage in `PokemonWrapper.hpp`. The wrapper
+class owns setup and teardown through **RAII**, so the C engine's manual lifecycle is managed by
+C++ scope rules rather than by remembering to call cleanup.
+
+### Manual memory management
+
+All allocation goes through `malloc`/`free` with explicit cleanup paths — the trie is freed by
+recursive descent, the linked list by forward traversal, both on exit.
+
+---
+
+## Project Structure
+
+```
+Pokemon-Go-System-Simulation/
+│
+├── pokemon-cpp/
+│   ├── main.cpp                # C++ entry point and program control
+│   ├── PokemonWrapper.cpp      # RAII wrapper over the C engine
+│   ├── PokemonWrapper.hpp      # extern "C" boundary declarations
+│   │
+│   ├── pokemon.c               # Core engine: capture, trie, list, dispatch tables
+│   ├── pokemon.h               # Structs, manager definitions, prototypes
+│   │
+│   ├── poke.txt                # 493-record dataset, loaded at runtime
+│   ├── Makefile                # Builds ./app
+│   └── .gitignore
+│
+├── .github/workflows/build.yml # CI: build + smoke test
+└── README.md
+```
+
 ---
 
 ## Gameplay Flow
 
-1. **Load Data:** Pokémon records read from `poke.txt` into a static array; names indexed into trie
-2. **Main Menu:** Player selects from Hunt, View Collection, Stats, Inventory, or Exit
-3. **Hunt:** Player specifies a region; a Pokémon is randomly selected from that region
-4. **Capture Attempt:** Ball type selected; catch outcome determined by catch percentage and RNG;
-   IVs randomly assigned on success
-5. **Collection Management:** Caught Pokémon added to linked list; sortable by name, type, or
-   Pokémon number; reversible
-6. **Export:** On exit, collection written to `pokemons.txt` in formatted table output
+1. **Load** — 493 records parsed from `poke.txt` into a static array; names indexed into the trie
+2. **Region select** — one region chosen at start (Kanto, Johto, Hoenn, or Sinnoh); encounters draw from it
+3. **Hunt** — a Pokémon is randomly selected; ball choice and per-Pokémon catch rate drive the outcome
+4. **Capture** — on success, Attack/Defense/Stamina IVs are randomly assigned and the entry joins the collection
+5. **Manage** — sort by name, type, or number; reverse; inspect stats and inventory
+6. **Lookup** — `NAME` queries the trie for any Pokédex entry
+7. **Export** — on exit, the collection is written to `pokemons.txt` as a formatted table
 
-```
-> Region: Kanto
-  A wild Gengar appeared! (Catch rate: 45%)
+You start with 10 of each ball — 30 attempts total. The run ends when you exit or run out.
 
-  [1] Poké Ball   [2] Great Ball   [3] Ultra Ball
-> 3
-  ✔ Gengar was caught!  ATK IV: 14  DEF IV: 11  STA IV: 15  (88.9%)
+---
+
+## Testing
+
+CI builds the project and runs a smoke test on every push, exercising the full startup path:
+dataset load, trie construction, and an apostrophe-containing lookup (`FARFETCH'D`) that would
+fail under naive character indexing.
+
+```bash
+cd pokemon-cpp && make
+printf "Trainer\nKanto\nNAME\nFARFETCH'D\nEXIT\n" | ./app
 ```
 
 ---
 
-## Skills Demonstrated
+## Engineering Notes
 
-* Manual memory management (`malloc`/`free`, pointer arithmetic, safe cleanup)
-* Function pointer–based manager pattern for modular dispatch
-* Trie data structure with custom character indexing
-* Doubly linked list with multi-key sort and in-place reversal
-* File I/O for data loading and persistent output
-* Probabilistic systems and randomized IV generation
-* Defensive programming and input validation
-
----
-
-## How to Run
-
-### 🟢 Quick Demo (OnlineGDB)
-
-Simply open the link above and run — no setup required. Intended for interactive exploration.
-
----
-
-### 🔵 Local Build (Makefile)
-
-#### Build
-
-```
-make
-```
-
-#### Run
-
-```
-./main
-```
-
-#### Notes
-
-* `poke.txt` must be present in the working directory
-* All Pokémon data is loaded from this file at startup
+- **C11** — function-pointer dispatch tables, manual memory management, pointer-based traversal, defensive input validation
+- **C++17** — `extern "C"` interop, RAII resource management, wrapper class design
+- **Data structures** — trie with custom character indexing, doubly linked list with multi-key sort
+- **Build** — Makefile, GCC/Clang, clean under `-Wall -Wextra`
 
 ---
 

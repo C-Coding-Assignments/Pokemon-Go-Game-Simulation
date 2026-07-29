@@ -1,0 +1,36 @@
+name: Build and Test
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y build-essential
+
+      - name: Build
+        working-directory: pokemon-cpp
+        run: make
+
+      - name: Smoke test — dataset load and trie lookup
+        working-directory: pokemon-cpp
+        run: |
+          # Exercises the full startup path: parse poke.txt, build the trie,
+          # then resolve a name containing an apostrophe. Naive c - 'a'
+          # character indexing fails this lookup.
+          out=$(printf "Trainer\nKanto\nNAME\nFARFETCH'D\nEXIT\n" | timeout 30 ./app)
+          echo "$out"
+          if ! echo "$out" | grep -q "Farfetch'd"; then
+            echo "::error::Trie lookup for FARFETCH'D did not resolve"
+            exit 1
+          fi
+          if ! echo "$out" | grep -q "Thanks for playing"; then
+            echo "::error::Program did not exit cleanly"
+            exit 1
+          fi
+          echo "Smoke test passed."
